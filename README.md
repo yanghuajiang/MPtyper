@@ -43,7 +43,7 @@ Options:
 ## Scope of use
 MPtyper is capable of analyzing single-end and paired-end sequencing data of single-clone bacteria or next-generation metagenome. However, because of the predefined parameters of minimap2, it is currently applicable only to short-read sequencing data.
 ## Composition of the Model
-The Model is a folder containing a reference genome in fasta format, SNP table(s) with ".def" as suffix in format as "genotype  contig  site  point-mutation" as follows:
+The Model is a folder containing a reference genome in fasta format, SNP table(s) with ".def" as suffix in format as "genotype  contig  site  point-mutation" as follows: [keep sites in order]
 ~~~~~~~~~~~~~~
 ......
 EC1	LR214945.1	435750	C->A
