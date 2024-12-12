@@ -1,0 +1,2 @@
+#Prefix	Reads	0_genotype	1_MRMP
+test	r1.fq.gz,r2.fq.gz	P1-1(-1.00),EC1(1.00),EC2(-1.00)	MR_A2063G(1.00),MR_A2064C(-1.00),MR_A2064G(-1.00),MR_A2067G(-1.00)
