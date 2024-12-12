@@ -78,7 +78,7 @@ def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
 
     first_line = p.stdout.readline()
     if not first_line:
-        print("ERROR: No matched reads!")
+        print(f"{prefix}    ERROR: No matched reads!")
         sys.exit(1)
 
     for line in p.stdout :
