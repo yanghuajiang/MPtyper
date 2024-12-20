@@ -36,35 +36,10 @@ samtools = shutil.which('samtools')
 @click.option('--min_cons', help='minimum proportion of consensus reads for high quality bases. [only for consensus sequences, default:0.8]', default=0.8, type=float)
 @click.option('-b', '--bam', help='flag to keep intermediate BAM file', default=False, is_flag=True)
 def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
-    expanded_models = []
-    for pattern in [model]:
-        matched_dirs = glob.glob(pattern)
-        if not matched_dirs:
-            raise FileNotFoundError(f"database not found: {pattern}")
-        for dir_path in matched_dirs:
-            if os.path.isdir(dir_path):
-                expanded_models.append(dir_path)
-            else:
-                raise NotADirectoryError(f"database is not dir: {dir_path}")
-    if not expanded_models:
-        raise FileNotFoundError("database not found.")
-    model_dir = expanded_models[0]
-    if not os.path.isdir(model_dir):
-        raise FileNotFoundError(f"database not found: {model_dir}")
-    ref = os.path.join(model_dir, 'reference.fa')
-    if not os.path.isfile(ref):
-        raise FileNotFoundError(f"reference not found: {ref}")
-    snvs = sorted(glob.glob(os.path.join(model_dir, "*.def")))
-    expanded_reads = []
-    for pattern in reads:
-        matched_files = glob.glob(pattern)
-        if not matched_files:
-            raise FileNotFoundError(f"file not found: {pattern}")
-        expanded_reads.extend(matched_files)
-    if len(expanded_reads) > 2:
-        expanded_reads = expanded_reads[:2]
-
-    read_list = ' '.join(expanded_reads)
+    if not os.path.isdir(model) :
+        model = os.path.join(os.path.dirname(__file__), model)
+        if not os.path.isdir(model) :
+            raise("database not found.")
     ref = os.path.join(model, 'reference.fa')
     snvs = sorted(glob.glob(os.path.join(model, "*.def")))
 
@@ -74,13 +49,8 @@ def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
 
     sam_cmd = f"{samtools} mpileup -AB -aaa {prefix}.bam"
     p = subprocess.Popen(sam_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
     depths = collections.defaultdict(list)
-
-    first_line = p.stdout.readline()
-    if not first_line:
-        print(f"{prefix}    ERROR: No matched reads!")
-        sys.exit(1)
-
     for line in p.stdout :
         p = line.strip().split('\t')
         bases = re.sub(r'\$', '', re.sub(r'\^.', '', p[4])).upper()
