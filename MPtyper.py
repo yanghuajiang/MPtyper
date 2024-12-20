@@ -1,17 +1,49 @@
 import os, sys, click, glob, shutil, subprocess, collections, re, numpy as np
 
+
+def check_database(database):
+    if not os.path.isdir(database) :
+        database = os.path.join(os.path.dirname(__file__), database)
+        if not os.path.isdir(database) :
+            raise FileNotFoundError(f"Database dir not found: {database}")
+        
+    ref = os.path.join(database, 'reference.fa')
+    if not os.path.isfile(ref) :
+        raise FileNotFoundError(f"Reference genome not found in {database}")
+    
+    snvs = sorted(glob.glob(os.path.join(database, "*.def")))
+    if not os.path.isfile(snvs[0]) :
+        raise FileNotFoundError(f"SNVs file not found in {database}")
+    
+    return ref, snvs
+
+
+def check_reads(reads) :
+    reads_list = []
+    for read in reads:
+        if os.path.isfile(read) :
+            reads_list.append(read)
+        else :
+            read = os.path.jion(os.path.dirname(__file__), read)
+            if os.path.isfile(reads) :
+                reads_list.append(read)
+            else :
+                raise FileNotFoundError(f"Reads not found: {read}")
+    return " ".join(reads_list)
+
+
 class HelpfulCmd(click.Command):
     def format_help(self, ctx, formatter):
         dbs = glob.glob(os.path.join(os.path.dirname(__file__), "*"))
         dbs = [os.path.basename(fn) for fn in dbs if not fn.endswith('.py')]
         click.echo('''Usage: MPtyper.py [OPTIONS]
 
-Options:
+Options:                 
   Internally available: {0}
-
-  -m, --model TEXT   dirname for the model. [default: MP]
+                   
+  -db, --database TEXT   dirname for the database. [default: MP]
   -o, --prefix TEXT  prefix for the outputs.  [required]
-  -r, --reads TEXT   files for short reads, can be specified at most twice.
+  -r, --reads TEXT   files for short reads, can be specified at most twice. 
                      [required]
   -c, --consensus    flag to generate consensus sequences. (for phylogenetic
                      analysis)
@@ -30,28 +62,25 @@ samtools = shutil.which('samtools')
 @click.command(cls=HelpfulCmd)
 @click.option('-o', '--prefix', help='prefix for the outputs.', required=True)
 @click.option('-r', '--reads', help='files for short reads, can be specified at most twice.', required=True, multiple=True)
-@click.option('-m', '--model', help='dirname for the model. [default: MP]', default='MP')
+@click.option('-db', '--database', help='dirname for the database. [default: MP]', default='MP')
 @click.option('-c', '--consensus', help='flag to generate consensus sequences (for phylogenetic analysis)', default=False, is_flag=True)
 @click.option('--min_depth', help='minimum read depth for high quality bases. [only for consensus sequences, default:3]', default=3, type=float)
 @click.option('--min_cons', help='minimum proportion of consensus reads for high quality bases. [only for consensus sequences, default:0.8]', default=0.8, type=float)
 @click.option('-b', '--bam', help='flag to keep intermediate BAM file', default=False, is_flag=True)
-def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
-    if not os.path.isdir(model) :
-        model = os.path.join(os.path.dirname(__file__), model)
-        if not os.path.isdir(model) :
-            raise("database not found.")
-    ref = os.path.join(model, 'reference.fa')
-    snvs = sorted(glob.glob(os.path.join(model, "*.def")))
+def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons) :
+    ref, snvs = check_database(database)
+    read_list = check_reads(reads)
 
-    read_list = ' '.join(reads[:2])
     map_cmd = f"{minimap2} -ax sr {ref} {read_list}|{samtools} view -F 4 -h|{samtools} sort -@8 -m 10G -O bam -l 0 -o {prefix}.bam"
-    p = subprocess.Popen(map_cmd, stderr=subprocess.PIPE, shell=True).communicate()
+    _ = subprocess.Popen(map_cmd, stderr=subprocess.PIPE, shell=True).communicate()
 
     sam_cmd = f"{samtools} mpileup -AB -aaa {prefix}.bam"
     p = subprocess.Popen(sam_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-
+    
     depths = collections.defaultdict(list)
     for line in p.stdout :
+        if not line :
+            raise SystemExit(f"{prefix}\tERROR: No matched reads!")
         p = line.strip().split('\t')
         bases = re.sub(r'\$', '', re.sub(r'\^.', '', p[4])).upper()
         bases = collections.Counter(''.join([bb[int(n):] for n, bb in re.findall(r"[+-](\d+)([^+-]+)", "+0"+bases)]))
@@ -71,7 +100,6 @@ def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
         s[max_d == 0] = "-"
         s[q == 0] = np.vectorize(lambda x:x.lower())(s[q == 0])
         sequences[n] = ''.join(s)
-
 
     gtt = []
     for snv_file in snvs :
@@ -109,7 +137,6 @@ def get_site_info(model, reads, prefix, consensus, bam, min_depth, min_cons) :
         with open(f"{prefix}.consensus.fa", "wt") as fout :
             for n, s in sequences.items() :
                 fout.write(f'>{prefix}__{n} {gtt} lowercase_for_uncertain_bases=(depth<{min_depth} or proportion<{min_cons})\n{s}\n')
-
 
 
 if __name__ == '__main__' :
