@@ -1,16 +1,6 @@
 # MPtyper
-A tool for identifying the genotypes of Mycoplasma pneumoniae contained in short-read data.
-## MPtyper was developed and tested in Python 3.9. MPtyper depends on several Python libraries:
-~~~~~~~~~~~~~~
-click
-glob
-shutil
-subprocess
-collections
-re
-numpy
-~~~~~~~~~~~~~~
-## MPtyper also calls the following 3rd party programs for different pipelines:
+A tool for identifying the genotypes of Mycoplasma pneumoniae contained in sequence data.
+## MPtyper was developed and tested in Python 3.9 and calls the following 3rd party programs for different pipelines:
 ~~~~~~~~~~~~~~
 minimap2
 samtools
@@ -18,6 +8,7 @@ samtools
 # Quick Start (with examples)
 ~~~~~~~~~~~~~~
 python MPtyper.py -db examples/MP -c -b -o examples/test -r examples/r1.fq.gz -r examples/r2.fq.gz
+[output print: test	P1-1(1.00);EC1(1.00)	Barcode_1.3.1(1.00)	MR_A2063G]
 ~~~~~~~~~~~~~~
 # USAGE
 ~~~~~~~~~~~~~~
