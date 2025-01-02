@@ -17,7 +17,7 @@ samtools
 ~~~~~~~~~~~~~~
 # Quick Start (with examples)
 ~~~~~~~~~~~~~~
-python MPtyper.py -db examples/MP -c -b -o examples/test_out -r examples/r1.fq.gz -r examples/r2.fq.gz
+python MPtyper.py -db examples/MP -c -b -o examples/test -r examples/r1.fq.gz -r examples/r2.fq.gz
 ~~~~~~~~~~~~~~
 # USAGE
 ~~~~~~~~~~~~~~
@@ -41,9 +41,9 @@ Options:
 ~~~~~~~~~~~~~~
 # Notes
 ## Scope of use
-MPtyper is capable of analyzing single-end and paired-end sequencing data of single-clone bacteria or next-generation metagenome. However, because of the predefined parameters of minimap2, it is currently applicable only to short-read sequencing data.
+MPtyper is capable of analyzing single-end and paired-end sequencing data of single-clone bacteria or next-generation metagenome. However, because of the predefined parameters of minimap2 (-ax sr), it is currently applicable better to short-read sequencing data.
 ## Composition of the database
-The database is a folder containing a reference genome in fasta format, SNP table(s) with ".def" as suffix in format as "genotype  contig  site  point-mutation" as follows: [keep sites in order]
+The database is a folder containing a reference genome in fasta format, SNVs table(s) with ".def" as suffix in format as "genotype  contig  site  point-mutation" as follows: [please keep sites in order for each genotype to reduce the caculating time]
 ~~~~~~~~~~~~~~
 ......
 EC1	LR214945.1	435750	C->A
@@ -57,16 +57,25 @@ EC2	LR214945.1	555564	C->A
 ......
 ~~~~~~~~~~~~~~
 ## Ootputs
-### There are 1-3 outputs stored genotype information, consensus sequences and matched reads in BAM format:
+### The core information of genotypes with its possibility will print on the screen, including [prefix], [P1 and EC type], [barcode type], [MR mutation]:
+~~~~~~~~~~~~~~
+test	P1-1(1.00);EC1(1.00)	Barcode_1.3.1(1.00)	MR_A2063G
+~~~~~~~~~~~~~~
+### There are 1-3 outputs stored detailed genotype information, consensus sequences and matched result in BAM format:
 ~~~~~~~~~~~~~~
 examples/test.genotypes
 examples/test.consensus.fa [if "-c" was given]
 examples/test.bam [if "-b" was given]
 ~~~~~~~~~~~~~~
 ### The number and the order of columns in the ".genotypes" file is determined by the number and the name's order of SNVs tables in the database folder, and multiple genotypes can be stored within the same table.
-### Output will give two kind of information for each genotype: Genotype name, Liklihood. Each SNPs table presents two genotypes. The genotype represented by the original base and represented by the substituted base are directly opposing. However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposing. EC1 is merely a prevalent clone within P1-1, and EC2 is merely a prevalent clone within P1-2. Therefore, EC1 and EC2 are not directly opposing. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. In summary, the magnitude of the probability value represents the ratio of the number of reads supporting that genotype to the total number of matching reads for both genotypes, with a maximum value of 1. The positive and negative signs indicate the genotype, where a positive sign represents the original genotype and a negative sign represents its opposing genotype. For instance: 
+### It gives two kind of information for each genotype: genotype name, matched reads and matched rate. Each type-specific SNVs present two genotypes: the genotype represented by the original base and represented by the substituted base, which are directly opposite. 
+However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposite. EC1 is merely a prevalent clone within P1-1, and EC2 is merely a prevalent clone within P1-2. Therefore, EC1 and EC2 are not directly opposite. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. 
+In summary, the magnitude of the probability value represents the ratio of the number of reads supporting that genotype to the total number of matched reads for both genotypes, with a maximum value of 1. 
+All detailed information for each genotype will saved in the ".genotypes" file: 
 ~~~~~~~~~~~~~~
-P1-1(-1.00) means "non P1-1" with liklihood of 1
-EC2(0.98) means "EC2" with liklihood of 0.98
+P1-2(15,0.00) means the possibility of "P1-2" is 0, 15 reads supports the opposite genotype (P1-1).
+P1-2(445,0.15) means the possibility of "P1-2" is 0.15, 445 reads supports this genotype, which also means the possibility of the opposite genotype (P1-1) is 0.85. So it is more likely to be "P1-1". The core information printed on the screen will simply show "P1-1(0.85)".
+EC1(138,1.00) means the possibility of "EC1" is 1, 138 reads supports this genotype.
+EC2(0,-1) means there is no reads supporting both "EC2" and "non-EC2", the possibility of "-1" means lack of information, which is set to distinct against the possibility of "0".
 ~~~~~~~~~~~~~~
 
