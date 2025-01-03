@@ -93,7 +93,7 @@ def mr_check(gtt) :
     for m in mr :
         if float(m[2]) > 0 :
             mut.append(m[0])
-        elif float(m[2]) == -1 :
+        elif float(m[2]) == 0 :
             non_mut.append(m[0])
 
     if not mut :
