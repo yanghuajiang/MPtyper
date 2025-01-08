@@ -6,15 +6,15 @@ def check_database(database):
         database = os.path.join(os.path.dirname(__file__), database)
         if not os.path.isdir(database) :
             raise FileNotFoundError(f"Database dir not found: {database}")
-
+        
     ref = os.path.join(database, 'reference.fa')
     if not os.path.isfile(ref) :
         raise FileNotFoundError(f"Reference genome not found in {database}")
-
+    
     snvs = sorted(glob.glob(os.path.join(database, "*.def")))
     if not os.path.isfile(snvs[0]) :
         raise FileNotFoundError(f"SNVs file not found in {database}")
-
+    
     return ref, snvs
 
 
@@ -31,7 +31,7 @@ def check_reads(reads) :
                 raise FileNotFoundError(f"Reads not found: {read}")
     return " ".join(reads_list)
 
-def p1_check(gtt, cutoff) : # Set a cut-off to define sigle type, 0.8 is recommended.
+def p1_check(gtt, cutoff) : 
     pattern_P1 = r'(P1-2)\(([\w]+),([-]?[\w\.]+)\)'
     p1_type = []
     p1 = re.findall(pattern_P1,gtt)[0]
@@ -47,23 +47,27 @@ def p1_check(gtt, cutoff) : # Set a cut-off to define sigle type, 0.8 is recomme
 
     return(p1_type[0])
 
-def ec_check(gtt, cutoff) : # Must > 0.5 amd larger value indicates a higher limit to single type; 0.8 is recommended.
+def ec_check(gtt, cutoff) : 
     pattern_EC1 = r'(EC1)\(([\w]+),([-]?[\w\.]+)\)'
     pattern_EC2 = r'(EC2)\(([\w]+),([-]?[\w\.]+)\)'
+    pattern_EC3 = r'(EC3)\(([\w]+),([-]?[\w\.]+)\)'
     ec1 = re.findall(pattern_EC1,gtt)[0]
     ec2 = re.findall(pattern_EC2,gtt)[0]
+    ec3 = re.findall(pattern_EC3,gtt)[0]
     ec = []
     if float(ec1[2]) >= 1 - cutoff :
         ec.append("EC1({0})".format(ec1[2]))
     if float(ec2[2]) >= 1 - cutoff :
         ec.append("EC2({0})".format(ec2[2]))
+    if float(ec3[2]) >= 1 - cutoff :
+        ec.append("EC3({0})".format(ec3[2]))
 
     if not ec :
         ec.append("N_D")
-
+        
     return(",".join(ec))
 
-def barcode_check(gtt, cutoff) : # Set a cut-off to define sigle type, 0.8 is recommended.
+def barcode_check(gtt, cutoff) :
     pattern_barcode = r'(Barcode_[\d\.]+)\(([\w]+),([-]?[\w\.]+)\)'
     barcode = re.findall(pattern_barcode, gtt)
     bar = []
@@ -77,10 +81,10 @@ def barcode_check(gtt, cutoff) : # Set a cut-off to define sigle type, 0.8 is re
     if bar_mix :
         bar_mix.extend(bar)
         return(",".join(bar_mix))
-
+    
     elif bar :
         return(bar[-1])
-
+    
     elif not bar :
         bar.append("N_D")
         return(",".join(bar))
@@ -103,7 +107,7 @@ def mr_check(gtt) :
             mut.append("Close to non-MUT")
         else :
             mut.append("Close to N_D")
-
+    
     return(",".join(mut))
 
 class HelpfulCmd(click.Command):
@@ -112,12 +116,12 @@ class HelpfulCmd(click.Command):
         dbs = [os.path.basename(fn) for fn in dbs if not fn.endswith('.py')]
         click.echo('''Usage: MPtyper.py [OPTIONS]
 
-Options:
+Options:                 
   Internally available: {0}
-
+                   
   -db, --database TEXT   dirname for the database. [default: MP]
   -o, --prefix TEXT  prefix for the outputs.  [required]
-  -r, --reads TEXT   files for short reads, can be specified at most twice.
+  -r, --reads TEXT   files for short reads, can be specified at most twice. 
                      [required]
   -c, --consensus    flag to generate consensus sequences. (for phylogenetic
                      analysis)
@@ -214,18 +218,17 @@ def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons) 
 
     gtt = "\t".join(gtt)
 
-    # Get core information with 80% as cut-off
-    p1 = p1_check(gtt, 0.8) 
-    ec = ec_check(gtt, 0.8)
-    barcode = barcode_check(gtt, 0.8)
+    cutoff = 0.8 # Set a cutoff for checks of mixed infection:
+    p1 = p1_check(gtt, cutoff)
+    ec = ec_check(gtt, cutoff)
+    barcode = barcode_check(gtt, cutoff)
     mr =  mr_check(gtt)
-    gtt_r = p1 + ";" + ec + "\t" + barcode + "\t" + mr
     
+
+    gtt_r = p1 + ";" + ec + "\t" + barcode + "\t" + mr # simplified output format
     with open(f"{prefix}.genotypes", "wt") as fout :
-        # Detail information saved
         fout.write("#Prefix\tInput\tmapped_count\tmapped_percentage\t{0}\n".format('\t'.join([ os.path.basename(fn).rsplit('.', 1)[0] for fn in snvs ])))
         fout.write("{0}\t{1}\t{2}\t{3}\t{4}\n".format(prefix, ','.join(reads[:2]), mapped_reads, mapped_percentage, gtt))
-        # Core information printed
         sys.stdout.write("{0}\t{1}\n".format(prefix, gtt_r))
 
     if consensus :
