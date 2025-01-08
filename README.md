@@ -16,7 +16,7 @@ Usage: MPtyper.py [OPTIONS]
 
 Options:
   Internally available: <>
-
+                   
   -db, --database TEXT   dirname for the database. [default: MP]
   -o, --prefix TEXT  prefix for the outputs.  [required]
   -r, --reads TEXT   files for short reads, can be specified at most twice. 
@@ -27,6 +27,8 @@ Options:
                      consensus sequences, default:3]
   --min_cons FLOAT   minimum proportion of consensus reads for high quality
                      bases. [only for consensus sequences, default:0.8]
+  --cutoff FLOAT     cutoff prability for checks of mixed infection. 
+                     [default:0.5, output only single genotype results]'
   -b, --bam          flag to keep intermediate BAM file.
   --help             Show this message and exit.
 ~~~~~~~~~~~~~~
@@ -60,9 +62,9 @@ examples/test.bam [if "-b" was given]
 ~~~~~~~~~~~~~~
 ### The number and the order of columns in the ".genotypes" file is determined by the number and the name's order of SNPs tables in the database folder, and multiple genotypes can be stored within the same table.
 ### It gives two kind of information for each genotype: genotype name, matched reads and matched rate. Each type-specific SNPs present two genotypes: the genotype represented by the original base and represented by the substituted base, which are directly opposite. 
-However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposite. EC1 is merely a prevalent clone within P1-1, and EC2 is merely a prevalent clone within P1-2. Therefore, EC1 and EC2 are not directly opposite. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. 
-In summary, the magnitude of the probability value represents the ratio of the number of reads supporting that genotype to the total number of matched reads for both genotypes, with a maximum value of 1. 
-All detailed information for each genotype will saved in the ".genotypes" file: 
+### However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposite. EC1 is merely a prevalent clone within P1-1, and EC2 is merely a prevalent clone within P1-2. Therefore, EC1 and EC2 are not directly opposite. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. 
+### A threshold is set to determine whether to make a co-infection judgment, and the default is 0.5. It was a value between 0.5-1, and 0.5 meant that there was no mixed infection judgment, and only the type with a higher number of allele-specific reads was output. 1 represents thorough mixed infection detection. As long as prability is not equal to 1, all mixed infections will be output. According to the verification results of MP monoclonal short read sequencing, the threshold of 0.8 is more consistent with the identification of single type. However, in fact, the existence of mixed infection has not been proved in the experiment, only a small number of samples have mixed types, and the possibility of sample contamination cannot be ruled out.
+### In summary, the magnitude of the probability value represents the ratio of the number of reads supporting that genotype to the total number of matched reads for both genotypes, with a maximum value of 1. All detailed information for each genotype will saved in the ".genotypes" file: 
 ~~~~~~~~~~~~~~
 P1-2(15,0.00) means the possibility of "P1-2" is 0, 15 reads supports the opposite genotype (P1-1).
 P1-2(445,0.15) means the possibility of "P1-2" is 0.15, 445 reads supports this genotype, which also means the possibility of the opposite genotype (P1-1) is 0.85. So it is more likely to be "P1-1". The core information printed on the screen will simply show "P1-1(0.85)".
