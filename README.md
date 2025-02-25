@@ -62,7 +62,7 @@ examples/test.bam [if "-b" was given]
 ~~~~~~~~~~~~~~
 ## Detailed instructions
 
-### OUTPUT FORMAT: The number and the order of columns in the ".genotypes" file is determined by the number and the name's order of SNPs tables in the database folder, and multiple genotypes can be stored within a same table.
+### OUTPUT FORMAT: The number and the order of columns in the ".genotypes" file is determined by the number and the name's order of SNP tables in the database folder, and multiple genotypes can be stored within a same table.
 
 ### GENOTYPE INSTRUCTION: It gives two kind of information for each genotype: genotype name, matched reads and matched rate. Each type-specific SNPs present two genotypes: the genotype represented by the original base and represented by the substituted base, which are directly opposite. However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposite. EC1 and EC2 are merely prevalent clones within P1-1 and P1-2. Therefore, EC1 and EC2 are not directly opposite. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. All detailed information for each genotype will be saved in the ".genotypes" file:  
 
