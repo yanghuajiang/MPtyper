@@ -53,14 +53,11 @@ def ec_check(gtt, cutoff) :
     pattern_EC3 = r'(EC3)\(([\w]+),([-]?[\w\.]+)\)'
     ec1 = re.findall(pattern_EC1,gtt)[0]
     ec2 = re.findall(pattern_EC2,gtt)[0]
-    ec3 = re.findall(pattern_EC3,gtt)[0]
     ec = []
     if float(ec1[2]) >= 1 - cutoff :
         ec.append("EC1({0})".format(ec1[2]))
     if float(ec2[2]) >= 1 - cutoff :
         ec.append("EC2({0})".format(ec2[2]))
-    if float(ec3[2]) >= 1 - cutoff :
-        ec.append("EC3({0})".format(ec3[2]))
 
     if not ec :
         ec.append("N_D")
@@ -129,6 +126,8 @@ Options:
                      consensus sequences, default:3]
   --min_cons FLOAT   minimum proportion of consensus reads for high quality
                      bases. [only for consensus sequences, default:0.8]
+  --cutoff FLOAT     cutoff prability for checks of mixed infection. 
+                     [default:0.5, output only single genotype result]
   -b, --bam          flag to keep intermediate BAM file.
   --help             Show this message and exit.
 '''.format(','.join(dbs)))
@@ -144,6 +143,7 @@ samtools = shutil.which('samtools')
 @click.option('-c', '--consensus', help='flag to generate consensus sequences (for phylogenetic analysis)', default=False, is_flag=True)
 @click.option('--min_depth', help='minimum read depth for high quality bases. [only for consensus sequences, default:3]', default=3, type=float)
 @click.option('--min_cons', help='minimum proportion of consensus reads for high quality bases. [only for consensus sequences, default:0.8]', default=0.8, type=float)
+@click.option('--cutoff', help='cutoff prability for checks of mixed infection. [default:0.5, output only single genotype results]', default=0.5, type=float)
 @click.option('-b', '--bam', help='flag to keep intermediate BAM file', default=False, is_flag=True)
 def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons) :
     ref, snvs = check_database(database)
