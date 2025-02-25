@@ -28,7 +28,7 @@ Options:
   --min_cons FLOAT   minimum proportion of consensus reads for high quality
                      bases. [only for consensus sequences, default:0.8]
   --cutoff FLOAT     cutoff prability for checks of mixed infection. 
-                     [default:0.5, output only single genotype results]'
+                     [default:0.5, output only single genotype results]
   -b, --bam          flag to keep intermediate BAM file.
   --help             Show this message and exit.
 ~~~~~~~~~~~~~~
