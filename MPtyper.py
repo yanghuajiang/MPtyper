@@ -145,7 +145,7 @@ samtools = shutil.which('samtools')
 @click.option('--min_cons', help='minimum proportion of consensus reads for high quality bases. [only for consensus sequences, default:0.8]', default=0.8, type=float)
 @click.option('--cutoff', help='cutoff prability for checks of mixed infection. [default:0.5, output only single genotype results]', default=0.5, type=float)
 @click.option('-b', '--bam', help='flag to keep intermediate BAM file', default=False, is_flag=True)
-def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons) :
+def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons, cutoff) :
     ref, snvs = check_database(database)
     read_list = check_reads(reads)
 
