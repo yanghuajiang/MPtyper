@@ -218,7 +218,7 @@ def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons) 
 
     gtt = "\t".join(gtt)
 
-    cutoff = 0.8 # Set a cutoff for checks of mixed infection:
+    cutoff = 0.5 # Set a cutoff for checks of mixed infection:
     p1 = p1_check(gtt, cutoff)
     ec = ec_check(gtt, cutoff)
     barcode = barcode_check(gtt, cutoff)
