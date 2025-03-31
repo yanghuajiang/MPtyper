@@ -1,0 +1,2 @@
+#Prefix	Input	mapped_count	mapped_percentage	0_genotype	1_barcode	2_MRMP
+test	r1.fq.gz,r2.fq.gz	39145	19.57%	P1-1(1.00);EC1(1.0)	Barcode_1.3.1(1.0)	MR_A2063G(1.0)
