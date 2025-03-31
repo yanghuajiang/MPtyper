@@ -57,7 +57,7 @@ def p1_check(gtt, cutoff) :
     else :
         if a > d :
             return("P1-1({0:.2f})".format(a / (a + d)))
-        elif d <= a :
+        elif a <= d :
             return("P1-2({0:.2f})".format(d / (a + d)))
 
 
