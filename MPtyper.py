@@ -1,4 +1,6 @@
-import os, sys, click, glob, shutil, subprocess, collections, re, numpy as np
+import os, sys, click, glob, shutil, subprocess, collections, re
+import pandas as pd
+import numpy as np
 
 
 def check_database(database):
@@ -31,81 +33,88 @@ def check_reads(reads) :
                 raise FileNotFoundError(f"Reads not found: {read}")
     return " ".join(reads_list)
 
+
+def result_df(gtt, pattern) :
+    result = re.findall(pattern, gtt)
+    df = pd.DataFrame(columns=["type","anc","der"])
+    for r in result :
+        t, a, d = r[0], int(r[1]), int(r[2])
+        df = pd.concat(
+            [df,
+             pd.DataFrame([[t,a,d]], columns=df.columns)],
+             ignore_index=True
+        )
+    df["anc"] = df["anc"].astype(int)
+    df["der"] = df["der"].astype(int)
+    return(df)
+
 def p1_check(gtt, cutoff) : 
     pattern_P1 = r'(P1-2)\(([\w]+),([-]?[\w\.]+)\)'
-    p1_type = []
     p1 = re.findall(pattern_P1,gtt)[0]
-    if float(p1[2]) == -1 :
-        p1_type.append("N_D")
+    _, a, d = p1[0], int(p1[1]), int(p1[2])
+    if max(a, d) < cutoff :
+        return("P1(N_D)")
     else :
-        if float(p1[2]) >= cutoff :
-            p1_type.append("P1-2({0})".format(p1[2]))
-        elif float(p1[2]) <= 1 - cutoff :
-            p1_type.append("P1-1({0:.2f})".format(1 - float(p1[2])))
-        else :
-            p1_type.append("P1-1({0:.2f}),P1-2({1})".format(1 - float(p1[2]),p1[2]))
+        if a > d :
+            return("P1-1({0:.2f})".format(a / (a + d)))
+        elif d <= a :
+            return("P1-2({0:.2f})".format(d / (a + d)))
 
-    return(p1_type[0])
 
-def ec_check(gtt, cutoff) : 
-    pattern_EC1 = r'(EC1)\(([\w]+),([-]?[\w\.]+)\)'
-    pattern_EC2 = r'(EC2)\(([\w]+),([-]?[\w\.]+)\)'
-    pattern_EC3 = r'(EC3)\(([\w]+),([-]?[\w\.]+)\)'
-    ec1 = re.findall(pattern_EC1,gtt)[0]
-    ec2 = re.findall(pattern_EC2,gtt)[0]
-    ec = []
-    if float(ec1[2]) >= 1 - cutoff :
-        ec.append("EC1({0})".format(ec1[2]))
-    if float(ec2[2]) >= 1 - cutoff :
-        ec.append("EC2({0})".format(ec2[2]))
-
-    if not ec :
-        ec.append("N_D")
+def ec_check(gtt, cutoff) :
+    pattern_EC = r'(EC[1-9])\(([\w]+),([-]?[\w\.]+)\)'  
+    df_ec = result_df(gtt, pattern_EC)
+    if df_ec[["anc","der"]].max().max() < cutoff :
+        return("EC(N_D)")
+    
+    else :
+        EC = []
+        for ec in df_ec.itertuples() :
+            if max(ec.anc, ec.der) < cutoff :
+                continue
+            elif ec.anc <= ec.der :
+                EC.append("{0}({1})".format(ec.type, ec.der / (ec.der + ec.anc)))
         
-    return(",".join(ec))
+        if not EC :
+            return("")
+        else :
+            return(",".join(EC))
+        
 
 def barcode_check(gtt, cutoff) :
     pattern_barcode = r'(Barcode_[\d\.]+)\(([\w]+),([-]?[\w\.]+)\)'
     barcode = re.findall(pattern_barcode, gtt)
     bar = []
-    bar_mix = []
     for b in barcode :
-        if float(b[2]) >= cutoff :
-            bar.append("{0}({1})".format(b[0],b[2]))
-        elif float(b[2]) > 1 - cutoff and float(b[2]) < cutoff :
-            bar_mix.append("{0}({1})".format(b[0],b[2]))
+        t, a, d = b[0], int(b[1]), int(b[2])
+        if max(a, d) < cutoff :
+            continue
+        elif a <= d :
+            bar.append("{0}({1})".format(t, d / (a + d)))
 
-    if bar_mix :
-        bar_mix.extend(bar)
-        return(",".join(bar_mix))
-    
-    elif bar :
+    if not bar :
+        return("Barcode(N_D)")
+    else:
         return(bar[-1])
-    
-    elif not bar :
-        bar.append("N_D")
-        return(",".join(bar))
 
-def mr_check(gtt) :
+
+def mr_check(gtt, cutoff) :
     pattern_MR = r'(MR[\w]+)\(([\w]+),([-]?[\w\.]+)\)'
-    mr = re.findall(pattern_MR,gtt)
-    mut = []
-    non_mut = []
-    for m in mr :
-        if float(m[2]) > 0 :
-            mut.append(m[0])
-        elif float(m[2]) == 0 :
-            non_mut.append(m[0])
+    df = result_df(gtt, pattern_MR)
 
-    if not mut :
-        if len(non_mut) == len(mr) :
-            mut.append("non-MUT")
-        elif any("2063" in i for i in non_mut) :
-            mut.append("Close to non-MUT")
-        else :
-            mut.append("Close to N_D")
+    if df[["anc","der"]].max().max() < cutoff :
+        return("MR(N_D)")
+        
+    elif df["der"].sum() > 0 :
+        row = df["der"].idxmax()
+        return("{0}({1})".format(df["mr"][row], df["der"].max()/df["der"].sum()))
     
-    return(",".join(mut))
+    elif df[df['mr'].str.contains('2063', na=False)]['anc'].sum() > 0 : # Position 2063 represents the most prevalent resistant mutation site (>95%).
+        return("MR(non-MUT)")
+    
+    else:
+        return("MR(N_D)")
+    
 
 class HelpfulCmd(click.Command):
     def format_help(self, ctx, formatter):
@@ -126,8 +135,8 @@ Options:
                      consensus sequences, default:3]
   --min_cons FLOAT   minimum proportion of consensus reads for high quality
                      bases. [only for consensus sequences, default:0.8]
-  --cutoff FLOAT     cutoff prability for checks of mixed infection. 
-                     [default:0.5, output only single genotype result]
+  --cutoff FLOAT     cutoff of total depth in type-specific sites for validation of genotypes. 
+                     [default:1, to assign genotypes for low-quality data]
   -b, --bam          flag to keep intermediate BAM file.
   --help             Show this message and exit.
 '''.format(','.join(dbs)))
@@ -143,7 +152,7 @@ samtools = shutil.which('samtools')
 @click.option('-c', '--consensus', help='flag to generate consensus sequences (for phylogenetic analysis)', default=False, is_flag=True)
 @click.option('--min_depth', help='minimum read depth for high quality bases. [only for consensus sequences, default:3]', default=3, type=float)
 @click.option('--min_cons', help='minimum proportion of consensus reads for high quality bases. [only for consensus sequences, default:0.8]', default=0.8, type=float)
-@click.option('--cutoff', help='cutoff prability for checks of mixed infection. [default:0.5, output only single genotype results]', default=0.5, type=float)
+@click.option('--cutoff', help='cutoff of total depth in type-specific sites for validation of genotypes. [default:1, to assign genotypes for low-quality data]', default=1, type=int)
 @click.option('-b', '--bam', help='flag to keep intermediate BAM file', default=False, is_flag=True)
 def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons, cutoff) :
     ref, snvs = check_database(database)
@@ -208,27 +217,22 @@ def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons, 
 
         gt = []
         for t, (a, d) in genotypes.items() :
-            if d > 0 :
-                gt.append("{0}({1},{2:.2f})".format(t, d, d/(a+d)))
-            elif a > 0 :
-                gt.append("{0}({1},{2:.2f})".format(t, a, 0))
-            else :
-                gt.append("{0}({1},{2})".format(t, 0, -1))
+            gt.append("{0}({1},{2})".format(t,a,d))
         gtt.append(';'.join(gt))
 
     gtt = "\t".join(gtt)
 
-    cutoff = cutoff # Set a cutoff for checks of mixed infection:
+    cutoff = cutoff 
     p1 = p1_check(gtt, cutoff)
     ec = ec_check(gtt, cutoff)
     barcode = barcode_check(gtt, cutoff)
-    mr =  mr_check(gtt)
+    mr =  mr_check(gtt, 1) # Resistant type id comfirmed even if there is only one read support.
     
 
-    gtt_r = p1 + ";" + ec + "\t" + barcode + "\t" + mr # simplified output format
+    gtt_r = p1 + ";" + ec + "\t" + barcode + "\t" + mr # simplified format
     with open(f"{prefix}.genotypes", "wt") as fout :
         fout.write("#Prefix\tInput\tmapped_count\tmapped_percentage\t{0}\n".format('\t'.join([ os.path.basename(fn).rsplit('.', 1)[0] for fn in snvs ])))
-        fout.write("{0}\t{1}\t{2}\t{3}\t{4}\n".format(prefix, ','.join(reads[:2]), mapped_reads, mapped_percentage, gtt))
+        fout.write("{0}\t{1}\t{2}\t{3}\t{4}\n".format(prefix, ','.join(reads[:2]), mapped_reads, mapped_percentage, gtt_r))
         sys.stdout.write("{0}\t{1}\n".format(prefix, gtt_r))
 
     if consensus :
@@ -239,3 +243,5 @@ def get_site_info(database, reads, prefix, consensus, bam, min_depth, min_cons, 
 
 if __name__ == '__main__' :
     get_site_info()
+
+
