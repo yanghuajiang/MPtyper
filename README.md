@@ -8,7 +8,6 @@ samtools
 # Quick Start (with examples)
 ~~~~~~~~~~~~~~
 python MPtyper.py -db examples/MP -c -b -o examples/test -r examples/r1.fq.gz -r examples/r2.fq.gz
-[output print: test	P1-1(1.00);EC1(1.00)	Barcode_1.3.1(1.00)	MR_A2063G]
 ~~~~~~~~~~~~~~
 # USAGE
 ~~~~~~~~~~~~~~
@@ -19,7 +18,7 @@ Options:
                    
   -db, --database TEXT   dirname for the database. [default: MP]
   -o, --prefix TEXT  prefix for the outputs.  [required]
-  -r, --reads TEXT   files for short reads, can be specified at most twice. 
+  -r, --reads TEXT   files for short reads, can be specified at most twice.
                      [required]
   -c, --consensus    flag to generate consensus sequences. (for phylogenetic
                      analysis)
@@ -27,8 +26,8 @@ Options:
                      consensus sequences, default:3]
   --min_cons FLOAT   minimum proportion of consensus reads for high quality
                      bases. [only for consensus sequences, default:0.8]
-  --cutoff FLOAT     cutoff prability for checks of mixed infection. 
-                     [default:0.5, output only single genotype results]
+  --cutoff FLOAT     cutoff of total depth in type-specific sites for validation of genotypes.
+                     [default:1, to assign genotypes for low-quality data]
   -b, --bam          flag to keep intermediate BAM file.
   --help             Show this message and exit.
 ~~~~~~~~~~~~~~
@@ -52,29 +51,14 @@ EC2	LR214945.1	555564	C->A
 ## Ootputs
 ### The core information of genotypes with its possibility will print on the screen, including [prefix], [P1 and EC type], [barcode type], [MR mutation]:
 ~~~~~~~~~~~~~~
-test	P1-1(1.00);EC1(1.00)	Barcode_1.3.1(1.00)	MR_A2063G
+test	P1-1(1.00);EC1(1.0)	Barcode_1.3.1(1.0)	MR_A2063G(1.0)
 ~~~~~~~~~~~~~~
 ### There are 1-3 outputs stored detailed genotype information, consensus sequences and matched result in BAM format:
 ~~~~~~~~~~~~~~
 examples/test.genotypes
 examples/test.consensus.fa [if "-c" was given]
-examples/test.bam [if "-b" was given]
-~~~~~~~~~~~~~~
-## Detailed instructions
-
-### OUTPUT FORMAT: The number and the order of columns in the ".genotypes" file is determined by the number and the name's order of SNP tables in the database folder, and multiple genotypes can be stored within a same table.
-
-### GENOTYPE INSTRUCTION: It gives two kind of information for each genotype: genotype name, matched reads and matched rate. Each type-specific SNPs present two genotypes: the genotype represented by the original base and represented by the substituted base, which are directly opposite. However, in the genotyping of Mycoplasma pneumoniae genomes, only P1-1 and P1-2 are directly opposite. EC1 and EC2 are merely prevalent clones within P1-1 and P1-2. Therefore, EC1 and EC2 are not directly opposite. In other words, the direct opposite of EC1 is "non-EC1." This interpretation can be extended to all other SNP-based genotyping scenarios. All detailed information for each genotype will be saved in the ".genotypes" file:  
-
-~~~~~~~~~~~~~~
-P1-2(15,0.00) means the possibility of "P1-2" is 0, 15 reads supports the opposite genotype (P1-1).
-P1-2(445,0.15) means the possibility of "P1-2" is 0.15, 445 reads supports this genotype, which also means the possibility of the opposite genotype (P1-1) is 0.85. So it is more likely to be "P1-1". The core information printed on the screen will simply show "P1-1(0.85)".
-EC1(138,1.00) means the possibility of "EC1" is 1, 138 reads supports this genotype.
-EC2(0,-1) means there is no reads supporting both "EC2" and "non-EC2", the possibility of "-1" means lack of information, which is set to distinct against the possibility of "0".
+examples/test.bam (.gz format) [if "-b" was given]
 ~~~~~~~~~~~~~~
 
-### SIMPLIFIED OUTPUT: To provide a more understandable output, a threshold is set to determine how to make a co-infection judgment. It can be setted between 0.5 to 1, the default value "0.5" means that there is no mixed infection judgment, and only the type with a higher number of allele-specific reads will output. "1" represents thorough mixed infection detection. Once the prability is smaller than threshold, all mixed infection results will print on the screen. In fact, the existence of mixed infection has not been proved in the experiment, only a small number of samples have mixed types, and the possibility of sample contamination cannot be ruled out.
-
-### In summary, the magnitude of the probability value represents the ratio of the number of reads supporting that genotype to the total number of matched reads for both genotypes, which only affects the simplified screen output. All detailed information for each genotype will be saved in the ".genotypes" file.
 
 
