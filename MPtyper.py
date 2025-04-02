@@ -73,7 +73,7 @@ def ec_check(gtt, cutoff) :
             if max(ec.anc, ec.der) < cutoff :
                 continue
             elif ec.anc <= ec.der :
-                EC.append("{0}({1})".format(ec.type, ec.der / (ec.der + ec.anc)))
+                EC.append("{0}({1:.2f})".format(ec.type, ec.der / (ec.der + ec.anc)))
         
         if not EC :
             return("")
@@ -90,7 +90,7 @@ def barcode_check(gtt, cutoff) :
         if max(a, d) < cutoff :
             continue
         elif a <= d :
-            bar.append("{0}({1})".format(t, d / (a + d)))
+            bar.append("{0}({1:.2f})".format(t, d / (a + d)))
 
     if not bar :
         return("Barcode(N_D)")
